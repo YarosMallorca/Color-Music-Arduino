@@ -29,6 +29,7 @@ VolAnalyzer sound(SOUND_PIN); // Configure audio device / in pin
 
 uint8_t curColor = 0;
 uint8_t curMode = 1;
+uint8_t curMenu = 1;
 
 
 DEFINE_GRADIENT_PALETTE (whiteblue_gp) {
@@ -41,12 +42,10 @@ DEFINE_GRADIENT_PALETTE (whiteblue_gp) {
 };
 
 void setup() {
-  ledBrightness = EEPROM.read(0);
-  
   attachInterrupt(0, isrCLK, CHANGE);
   attachInterrupt(1, isrDT, CHANGE);
   FastLED.addLeds<WS2812, STRIP_PIN, GRB>(leds, LEDS_AM); // Add Leds to Array
-  FastLED.setBrightness(ledBrightness); // Set led brightness according to variable
+  FastLED.setBrightness(255); // Set led brightness according to variable
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 18000);
 
   // sound analyzer settings
@@ -66,163 +65,122 @@ void isrDT() {
 
 void loop() {
   enc.tick(); // Get encoder state
-
-
+  
   if (curMode == 1) {
-    if (enc.isRight() && colorStep < 151) {
-      colorStep++;
-    }
-
-    if (enc.isLeft() && colorStep > 30) {
-      colorStep--;
-    }
-
+    multicolor();
     if (enc.isClick()) {
       curMode++;
     }
   }
-
-  if (curMode == 2) {
+ 
+  else if (curMode == 2) {
+    singlecolor();
     if (enc.isRight() && curColor < 360) {
       startHue += 10;
     }
-
     else if (enc.isRight() && curColor >= 360) {
       startHue = 0;
     }
-
-    if (enc.isLeft() && curColor > 0) {
+    else if (enc.isLeft() && curColor > 0) {
       startHue -= 10;
     }
-
     else if (enc.isLeft() && curColor <= 0) {
       startHue = 360;
     }
-
     if (enc.isClick()) {
       curMode++;
     }
 
   }
 
-  if (curMode == 3) {
+  else if (curMode == 3) {
+    lightcolor();
     if (enc.isRight() && solidColor < 360) {
       solidColor += 10;
     }
-
     else if (enc.isRight() && solidColor >= 360) {
       solidColor = 0;
     }
-
-    if (enc.isLeft() && solidColor > 0) {
+    else if (enc.isLeft() && solidColor > 0) {
       solidColor -= 10;
     }
-
     else if (enc.isLeft() && curColor <= 0) {
       solidColor = 360;
     }
-
     if (enc.isClick()) {
       curMode++;
     }
-
   }
 
-  if (curMode == 4) {
+  else if (curMode == 4) {
+    lampmode();
     if (enc.isRight() && lampTemp < 220) {
       lampTemp += 10;
     }
 
-    if (enc.isLeft() && lampTemp > 0) {
+    else if (enc.isLeft() && lampTemp > 0) {
       lampTemp -= 10;
     }
-
     if (enc.isClick()) {
       curMode++;
     }
-
   }
 
-  if (curMode == 5) {
+  else if (curMode == 5) {
+    wavemode();
     if (enc.isClick()) {
       curMode = 1;
     }
   }
-
-  if (curMode == 1) {
-    multicolor_loop();
-  }
-
-  else if (curMode == 2) {
-    singlecolor_loop();
-  }
-
-  else if (curMode == 3) {
-    lightcolor_loop();
-  }
-
-  else if (curMode == 4) {
-    lampmode_loop();
-  }
-
-  else {
-    wavemode_loop();
-  }
-
 }
 
-void multicolor_loop() {
+void multicolor() {
   if (sound.tick()) {
     for (int k = 0; k < waveSpeed; k++) {
       for (int i = LEDS_AM - 1; i > 0; i--) leds[i] = leds[i - 1];
     }
-
     if (sound.pulse()) curColor += colorStep;
-
     int vol = sound.getVol();
     CRGB color = CHSV(curColor, 255, vol);
-
     for (int i = 0; i < waveSpeed; i++) leds[i] = color;
-
     FastLED.show();
   }
 }
 
-void singlecolor_loop() {
+void singlecolor() {
   if (sound.tick()) {
     for (int k = 0; k < waveSpeed; k++) {
       for (int i = LEDS_AM - 1; i > 0; i--) leds[i] = leds[i - 1];
     }
-
-
+    
     int vol = sound.getVol();
     CRGB color = CHSV(startHue + vol / 5, 255 - vol / 2, vol);
-
     for (int i = 0; i < waveSpeed; i++) leds[i] = color;
-
     FastLED.show();
   }
 }
 
-void lightcolor_loop() {
+void lightcolor() {
   fill_solid( leds, LEDS_AM,  CHSV(solidColor, 255, 255));
   FastLED.show();
 }
 
-void lampmode_loop() {
+void lampmode() {
   fill_solid( leds, LEDS_AM,  CHSV(40, lampTemp, 180));
   FastLED.show();
 }
 
-void wavemode_loop() {
+void wavemode() {
   static uint8_t colorIndex = 0;
-  
   CRGBPalette16 whitebluePalette = whiteblue_gp;
-
   fill_palette(leds, LEDS_AM, colorIndex, 500/LEDS_AM, whitebluePalette, 180, LINEARBLEND);
-  
   EVERY_N_MILLISECONDS(10){colorIndex-=2;};
 
-  
   FastLED.show();
 }
+
+void brightness() {
+  for (int i=0; i<20; i++)
+  leds[i] = CHSV( map(i % 8, 0, 8, 0, 255), 255, 255);
+}
+
