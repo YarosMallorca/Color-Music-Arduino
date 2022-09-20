@@ -19,7 +19,6 @@ int startHue = 0; // Color Music Singlecolor (singlecolor mode only)
 uint8_t lampTemp = 150; // Lamp Temperature (lamp mode only)
 int solidColor = 160; // Solid Color (solid color mode only)
 
-uint8_t encMenu = 0; // Current Menu selected via Encoder: 0 = Main; 1 = Brightness Adjustment
 uint8_t encItem = 0; // Current Item selected via Encoder
 
 CRGB leds[LEDS_AM]; // Configure LED Output
